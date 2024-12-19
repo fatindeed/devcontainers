@@ -1,0 +1,8 @@
+# https://github.com/devcontainers/images/tree/main/src/python
+ARG VARIANT=3-bookworm
+FROM mcr.microsoft.com/devcontainers/python:${VARIANT}
+
+RUN set -e; \
+    su vscode -c "mkdir -p /home/vscode/.vscode-server /home/vscode/.vscode-server-insiders"; \
+    pip3 --disable-pip-version-check --no-cache-dir install poetry; \
+    curl -sSL https://github.com/fatindeed/dotfiles-go/raw/main/install.sh | bash;
