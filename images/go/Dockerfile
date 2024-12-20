@@ -1,4 +1,3 @@
-# https://github.com/devcontainers/images/tree/main/src/go
 ARG VARIANT=1.23-bookworm
 FROM mcr.microsoft.com/devcontainers/go:${VARIANT}
 

@@ -7,7 +7,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  generate-jobs:
+    name: Generate Jobs
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate-jobs.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: generate-jobs
+        name: Generate Jobs
+        run: echo "matrix=$(jq -c . < ./manifest.json)" >> $GITHUB_OUTPUT
+
   build_and_push:
+    needs: generate-jobs
     runs-on: ubuntu-latest
     env:
       REGISTRY: ghcr.io
@@ -17,20 +29,7 @@ jobs:
       attestations: write
       packages: write
     strategy:
-      matrix:
-        image:
-          - name: go
-            variant: 1.23-bookworm
-          - name: go
-            variant: 1.22-bookworm
-          - name: python
-            variant: 3.13-bookworm
-          - name: python
-            variant: 3.12-bookworm
-          - name: python
-            variant: 3.11-bookworm
-          - name: python
-            variant: 3.10-bookworm
+      matrix: ${{fromJson(needs.generate-jobs.outputs.matrix)}}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -52,26 +51,27 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ github.repository_owner }}/devcontainer-${{ matrix.image.name }}
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer-${{ matrix.image.name }}
+            ${{ github.repository_owner }}/devcontainer-${{ matrix.image }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer-${{ matrix.image }}
           tags: |
-            type=raw,enable=true,value=${{ matrix.image.variant }}
+            type=raw,enable=true,value=${{ matrix.variant }}
+            type=raw,value=latest,enable=${{ matrix.latest }}
           labels: |
-            org.opencontainers.image.version=${{ matrix.image.variant }}
+            org.opencontainers.image.version=${{ matrix.variant }}
       - name: Build and push
         id: push
         uses: docker/build-push-action@v5
         with:
-          context: images/${{ matrix.image.name }}
+          context: images/${{ matrix.image }}
           push: true
           provenance: mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VARIANT=${{ matrix.image.variant }}
+            VARIANT=${{ matrix.variant }}
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer-${{ matrix.image.name }}
+          subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer-${{ matrix.image }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true

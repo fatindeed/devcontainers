@@ -1,0 +1,39 @@
+{
+  "include": [
+    {
+      "image": "go",
+      "variant": "1.23-bookworm",
+      "latest": true
+    },
+    {
+      "image": "go",
+      "variant": "1.22-bookworm",
+      "latest": false
+    },
+    {
+      "image": "python",
+      "variant": "3.13-bookworm",
+      "latest": true
+    },
+    {
+      "image": "python",
+      "variant": "3.12-bookworm",
+      "latest": false
+    },
+    {
+      "image": "python",
+      "variant": "3.11-bookworm",
+      "latest": false
+    },
+    {
+      "image": "python",
+      "variant": "3.10-bookworm",
+      "latest": false
+    },
+    {
+      "image": "python",
+      "variant": "3.9-bookworm",
+      "latest": false
+    }
+  ]
+}
