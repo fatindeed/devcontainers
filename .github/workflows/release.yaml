@@ -1,0 +1,91 @@
+# https://docs.docker.com/build/ci/github-actions/
+name: Build Dev Container Images
+
+on:
+  # https://docs.github.com/en/actions/reference/events-that-trigger-workflows
+  push:
+  workflow_dispatch:
+
+jobs:
+  generate-jobs:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+      matrix: ${{ steps.generate-jobs.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Detect changes
+        id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            changed:
+              - 'manifest.json'
+              - 'images/**'
+      - name: Generate Jobs
+        id: generate-jobs
+        if: steps.changes.outputs.changed == 'true'
+        run: echo "matrix=$(jq -c . < ./manifest.json)" >> $GITHUB_OUTPUT
+
+  build_and_push:
+    needs: generate-jobs
+    if: needs.generate-jobs.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+      packages: write
+    strategy:
+      matrix: ${{fromJson(needs.generate-jobs.outputs.matrix)}}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ github.repository_owner }}/devcontainer-${{ matrix.image }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer-${{ matrix.image }}
+          tags: |
+            type=raw,enable=true,value=${{ matrix.variant }}
+            type=raw,value=latest,enable=${{ matrix.latest }}
+          labels: |
+            org.opencontainers.image.version=${{ matrix.variant }}
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: images/${{ matrix.image }}
+          platforms: ${{ matrix.platforms }}
+          push: true
+          provenance: mode=max
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VARIANT=${{ matrix.variant }}
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer-${{ matrix.image }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true

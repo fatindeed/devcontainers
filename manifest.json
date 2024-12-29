@@ -1,0 +1,46 @@
+{
+  "include": [
+    {
+      "image": "go",
+      "variant": "1.23-bookworm",
+      "platforms": "linux/amd64,linux/arm64",
+      "latest": true
+    },
+    {
+      "image": "go",
+      "variant": "1.22-bookworm",
+      "platforms": "linux/amd64,linux/arm64",
+      "latest": false
+    },
+    {
+      "image": "python",
+      "variant": "3.13-bookworm",
+      "platforms": "linux/amd64,linux/arm64",
+      "latest": true
+    },
+    {
+      "image": "python",
+      "variant": "3.12-bookworm",
+      "platforms": "linux/amd64,linux/arm64",
+      "latest": false
+    },
+    {
+      "image": "python",
+      "variant": "3.11-bookworm",
+      "platforms": "linux/amd64,linux/arm64",
+      "latest": false
+    },
+    {
+      "image": "python",
+      "variant": "3.10-bookworm",
+      "platforms": "linux/amd64,linux/arm64",
+      "latest": false
+    },
+    {
+      "image": "python",
+      "variant": "3.9-bookworm",
+      "platforms": "linux/amd64,linux/arm64",
+      "latest": false
+    }
+  ]
+}
